@@ -20,6 +20,69 @@ class FileService {
     const file = this.files.find(f => f.Id === parseInt(id) || f.id === id);
     return file ? { ...file } : null;
   }
+async processFileUpload(file) {
+    try {
+      let aiDescription = null;
+      
+      // Generate AI description for images
+      if (file.type.startsWith("image/")) {
+        try {
+          // Convert file to base64 for OpenAI
+          const base64Data = await this.fileToBase64(file);
+          
+          const { ApperClient } = window.ApperSDK;
+          const apperClient = new ApperClient({
+            apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+            apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+          });
+          
+          const result = await apperClient.functions.invoke(import.meta.env.VITE_ANALYZE_IMAGE, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              imageData: base64Data,
+              fileName: file.name
+            })
+          });
+          
+          if (result.success) {
+            aiDescription = result.description;
+          }
+        } catch (error) {
+          console.warn('AI analysis failed:', error);
+          // Continue without AI description
+        }
+      }
+      
+      const fileData = {
+        id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadProgress: 100,
+        status: "completed",
+        uploadedAt: new Date().toISOString(),
+        url: URL.createObjectURL(file),
+        thumbnailUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+        aiDescription: aiDescription
+      };
+      
+      return fileData;
+    } catch (error) {
+      throw new Error(`Upload processing failed: ${error.message}`);
+    }
+  }
+
+  async fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   async create(fileData) {
     await this.delay();
@@ -54,9 +117,9 @@ class FileService {
     return true;
   }
 
-  async uploadFile(file, onProgress) {
+async uploadFile(file, onProgress) {
     // Simulate file upload with progress
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       let progress = 0;
       const interval = setInterval(() => {
         progress += Math.random() * 15 + 5;
@@ -69,19 +132,7 @@ class FileService {
           if (Math.random() < 0.05) {
             reject(new Error("Upload failed - network error"));
           } else {
-            const fileData = {
-              id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              uploadProgress: 100,
-              status: "completed",
-              uploadedAt: new Date().toISOString(),
-              url: URL.createObjectURL(file),
-              thumbnailUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null
-            };
-            
-            resolve(fileData);
+            this.processFileUpload(file).then(resolve).catch(reject);
           }
         }
         

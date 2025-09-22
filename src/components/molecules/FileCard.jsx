@@ -77,7 +77,7 @@ const FileCard = ({
 
           {/* File Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
+<div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900 truncate text-sm">
                   {file.name}
@@ -88,6 +88,12 @@ const FileCard = ({
                     <> • {format(new Date(file.uploadedAt), "MMM d, yyyy 'at' h:mm a")}</>
                   )}
                 </p>
+                {file.aiDescription && (
+                  <p className="text-xs text-primary-600 mt-1 italic bg-primary-50 px-2 py-1 rounded">
+                    <ApperIcon name="Sparkles" size={12} className="inline mr-1" />
+                    {file.aiDescription}
+                  </p>
+                )}
               </div>
               
               {getStatusBadge()}
