@@ -1,0 +1,65 @@
+@import 'react-toastify/dist/ReactToastify.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  body {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .drop-zone-active {
+    @apply bg-primary-50 border-primary-500 border-solid;
+  }
+  
+  .file-card-hover {
+    @apply transform translate-y-[-2px] shadow-lg;
+  }
+  
+  .progress-bar-fill {
+    transform-origin: left;
+    transition: transform 300ms ease-out;
+  }
+}
+
+/* Toast Customizations */
+.Toastify__toast-container {
+  width: 380px;
+  font-family: 'Inter', sans-serif;
+  z-index: 9999;
+}
+
+.Toastify__toast {
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 16px;
+  min-height: 60px;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.Toastify__toast--warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+}
