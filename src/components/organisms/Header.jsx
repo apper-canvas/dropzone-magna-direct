@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useLocation, Link } from "react-router-dom";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
+import LogoutButton from "@/components/molecules/LogoutButton";
 import { cn } from "@/utils/cn";
 
 const Header = () => {
@@ -76,7 +77,7 @@ const Header = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
+<div className="hidden lg:flex items-center gap-3">
             <Button
               variant="secondary"
               size="sm"
@@ -92,6 +93,7 @@ const Header = () => {
             >
               Settings
             </Button>
+            <LogoutButton />
           </div>
         </div>
       </div>

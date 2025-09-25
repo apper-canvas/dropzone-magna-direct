@@ -1,26 +1,135 @@
-import filesData from "@/services/mockData/files.json";
-
 class FileService {
   constructor() {
-    this.files = [...filesData];
+    this.tableName = 'file_c';
+    this.apperClient = null;
   }
 
-  // Simulate network delay
-  delay(ms = 300) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  // Initialize ApperClient
+  getApperClient() {
+    if (!this.apperClient) {
+      const { ApperClient } = window.ApperSDK;
+      this.apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+    }
+    return this.apperClient;
   }
 
   async getAll() {
-    await this.delay();
-    return [...this.files];
+    try {
+      const params = {
+        fields: [
+          {"field": {"Name": "id_c"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "size_c"}},
+          {"field": {"Name": "type_c"}},
+          {"field": {"Name": "upload_progress_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "uploaded_at_c"}},
+          {"field": {"Name": "url_c"}},
+          {"field": {"Name": "thumbnail_url_c"}},
+          {"field": {"Name": "ai_description_c"}}
+        ],
+        orderBy: [{"fieldName": "uploaded_at_c", "sorttype": "DESC"}],
+        pagingInfo: {"limit": 100, "offset": 0}
+      };
+      
+      const apperClient = this.getApperClient();
+      const response = await apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response?.data?.length) {
+        return [];
+      } else {
+        // Map database field names to expected field names for UI compatibility
+        return response.data.map(file => ({
+          Id: file.Id,
+          id: file.id_c,
+          name: file.name_c,
+          size: file.size_c,
+          type: file.type_c,
+          uploadProgress: file.upload_progress_c,
+          status: file.status_c,
+          uploadedAt: file.uploaded_at_c,
+          url: file.url_c,
+          thumbnailUrl: file.thumbnail_url_c,
+          aiDescription: file.ai_description_c,
+          // Database field names for internal use
+          id_c: file.id_c,
+          name_c: file.name_c,
+          size_c: file.size_c,
+          type_c: file.type_c,
+          upload_progress_c: file.upload_progress_c,
+          status_c: file.status_c,
+          uploaded_at_c: file.uploaded_at_c,
+          url_c: file.url_c,
+          thumbnail_url_c: file.thumbnail_url_c,
+          ai_description_c: file.ai_description_c
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching files:", error?.response?.data?.message || error);
+      return [];
+    }
   }
 
   async getById(id) {
-    await this.delay();
-    const file = this.files.find(f => f.Id === parseInt(id) || f.id === id);
-    return file ? { ...file } : null;
+    try {
+      const params = {
+        fields: [
+          {"field": {"Name": "id_c"}},
+          {"field": {"Name": "name_c"}},
+          {"field": {"Name": "size_c"}},
+          {"field": {"Name": "type_c"}},
+          {"field": {"Name": "upload_progress_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "uploaded_at_c"}},
+          {"field": {"Name": "url_c"}},
+          {"field": {"Name": "thumbnail_url_c"}},
+          {"field": {"Name": "ai_description_c"}}
+        ]
+      };
+      
+      const apperClient = this.getApperClient();
+      const response = await apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response?.data) {
+        return null;
+      } else {
+        const file = response.data;
+        // Map database field names to expected field names for UI compatibility
+        return {
+          Id: file.Id,
+          id: file.id_c,
+          name: file.name_c,
+          size: file.size_c,
+          type: file.type_c,
+          uploadProgress: file.upload_progress_c,
+          status: file.status_c,
+          uploadedAt: file.uploaded_at_c,
+          url: file.url_c,
+          thumbnailUrl: file.thumbnail_url_c,
+          aiDescription: file.ai_description_c,
+          // Database field names for internal use
+          id_c: file.id_c,
+          name_c: file.name_c,
+          size_c: file.size_c,
+          type_c: file.type_c,
+          upload_progress_c: file.upload_progress_c,
+          status_c: file.status_c,
+          uploaded_at_c: file.uploaded_at_c,
+          url_c: file.url_c,
+          thumbnail_url_c: file.thumbnail_url_c,
+          ai_description_c: file.ai_description_c
+        };
+      }
+    } catch (error) {
+      console.error(`Error fetching file ${id}:`, error?.response?.data?.message || error);
+      return null;
+    }
   }
-async processFileUpload(file) {
+
+  async processFileUpload(file) {
     try {
       let aiDescription = null;
       
@@ -30,11 +139,7 @@ async processFileUpload(file) {
           // Convert file to base64 for OpenAI
           const base64Data = await this.fileToBase64(file);
           
-          const { ApperClient } = window.ApperSDK;
-          const apperClient = new ApperClient({
-            apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
-            apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
-          });
+          const apperClient = this.getApperClient();
           
           const result = await apperClient.functions.invoke(import.meta.env.VITE_ANALYZE_IMAGE, {
             method: 'POST',
@@ -85,39 +190,172 @@ async processFileUpload(file) {
   }
 
   async create(fileData) {
-    await this.delay();
-    
-    const newFile = {
-      ...fileData,
-      Id: Math.max(...this.files.map(f => f.Id), 0) + 1,
-      uploadedAt: new Date().toISOString()
-    };
-    
-    this.files.unshift(newFile);
-    return { ...newFile };
+    try {
+      const params = {
+        records: [
+          {
+            // Only include updateable fields
+            id_c: fileData.id,
+            name_c: fileData.name,
+            size_c: fileData.size,
+            type_c: fileData.type,
+            upload_progress_c: fileData.uploadProgress || 0,
+            status_c: fileData.status || "uploading",
+            uploaded_at_c: fileData.uploadedAt || new Date().toISOString(),
+            url_c: fileData.url || "",
+            thumbnail_url_c: fileData.thumbnailUrl || "",
+            ai_description_c: fileData.aiDescription || ""
+          }
+        ]
+      };
+      
+      const apperClient = this.getApperClient();
+      const response = await apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+      
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to create ${failed.length} files:`, failed);
+          failed.forEach(record => {
+            if (record.message) console.error(record.message);
+          });
+        }
+        
+        if (successful.length > 0) {
+          const createdFile = successful[0].data;
+          // Map database field names to expected field names for UI compatibility
+          return {
+            Id: createdFile.Id,
+            id: createdFile.id_c,
+            name: createdFile.name_c,
+            size: createdFile.size_c,
+            type: createdFile.type_c,
+            uploadProgress: createdFile.upload_progress_c,
+            status: createdFile.status_c,
+            uploadedAt: createdFile.uploaded_at_c,
+            url: createdFile.url_c,
+            thumbnailUrl: createdFile.thumbnail_url_c,
+            aiDescription: createdFile.ai_description_c
+          };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error creating file:", error?.response?.data?.message || error);
+      throw error;
+    }
   }
 
   async update(id, updates) {
-    await this.delay();
-    
-    const index = this.files.findIndex(f => f.Id === parseInt(id) || f.id === id);
-    if (index === -1) return null;
-    
-    this.files[index] = { ...this.files[index], ...updates };
-    return { ...this.files[index] };
+    try {
+      // Map UI field names to database field names
+      const updateData = {};
+      if (updates.id !== undefined) updateData.id_c = updates.id;
+      if (updates.name !== undefined) updateData.name_c = updates.name;
+      if (updates.size !== undefined) updateData.size_c = updates.size;
+      if (updates.type !== undefined) updateData.type_c = updates.type;
+      if (updates.uploadProgress !== undefined) updateData.upload_progress_c = updates.uploadProgress;
+      if (updates.status !== undefined) updateData.status_c = updates.status;
+      if (updates.uploadedAt !== undefined) updateData.uploaded_at_c = updates.uploadedAt;
+      if (updates.url !== undefined) updateData.url_c = updates.url;
+      if (updates.thumbnailUrl !== undefined) updateData.thumbnail_url_c = updates.thumbnailUrl;
+      if (updates.aiDescription !== undefined) updateData.ai_description_c = updates.aiDescription;
+
+      const params = {
+        records: [
+          {
+            Id: parseInt(id),
+            ...updateData
+          }
+        ]
+      };
+      
+      const apperClient = this.getApperClient();
+      const response = await apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return null;
+      }
+      
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to update ${failed.length} files:`, failed);
+          failed.forEach(record => {
+            if (record.message) console.error(record.message);
+          });
+        }
+        
+        if (successful.length > 0) {
+          const updatedFile = successful[0].data;
+          // Map database field names to expected field names for UI compatibility
+          return {
+            Id: updatedFile.Id,
+            id: updatedFile.id_c,
+            name: updatedFile.name_c,
+            size: updatedFile.size_c,
+            type: updatedFile.type_c,
+            uploadProgress: updatedFile.upload_progress_c,
+            status: updatedFile.status_c,
+            uploadedAt: updatedFile.uploaded_at_c,
+            url: updatedFile.url_c,
+            thumbnailUrl: updatedFile.thumbnail_url_c,
+            aiDescription: updatedFile.ai_description_c
+          };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error updating file:", error?.response?.data?.message || error);
+      return null;
+    }
   }
 
   async delete(id) {
-    await this.delay();
-    
-    const index = this.files.findIndex(f => f.Id === parseInt(id) || f.id === id);
-    if (index === -1) return false;
-    
-    this.files.splice(index, 1);
-    return true;
+    try {
+      const params = { 
+        RecordIds: [parseInt(id)]
+      };
+      
+      const apperClient = this.getApperClient();
+      const response = await apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return false;
+      }
+      
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to delete ${failed.length} files:`, failed);
+          failed.forEach(record => {
+            if (record.message) console.error(record.message);
+          });
+        }
+        
+        return successful.length > 0;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting file:", error?.response?.data?.message || error);
+      return false;
+    }
   }
 
-async uploadFile(file, onProgress) {
+  async uploadFile(file, onProgress) {
     // Simulate file upload with progress
     return new Promise(async (resolve, reject) => {
       let progress = 0;
@@ -142,33 +380,47 @@ async uploadFile(file, onProgress) {
   }
 
   async downloadFile(fileId) {
-    await this.delay(100);
-    
-    const file = this.files.find(f => f.Id === parseInt(fileId) || f.id === fileId);
-    if (!file) return null;
-    
-    // In a real app, this would trigger a download
-    return {
-      url: file.url,
-      filename: file.name
-    };
+    try {
+      const file = await this.getById(fileId);
+      if (!file) return null;
+      
+      // In a real app, this would trigger a download
+      return {
+        url: file.url,
+        filename: file.name
+      };
+    } catch (error) {
+      console.error("Error downloading file:", error?.response?.data?.message || error);
+      return null;
+    }
   }
 
   async getUploadStats() {
-    await this.delay(200);
-    
-    const totalFiles = this.files.length;
-    const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
-    const completedFiles = this.files.filter(f => f.status === "completed").length;
-    const failedFiles = this.files.filter(f => f.status === "error").length;
-    
-    return {
-      totalFiles,
-      totalSize,
-      completedFiles,
-      failedFiles,
-      successRate: totalFiles > 0 ? (completedFiles / totalFiles) * 100 : 0
-    };
+    try {
+      const files = await this.getAll();
+      
+      const totalFiles = files.length;
+      const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+      const completedFiles = files.filter(f => f.status === "completed").length;
+      const failedFiles = files.filter(f => f.status === "error").length;
+      
+      return {
+        totalFiles,
+        totalSize,
+        completedFiles,
+        failedFiles,
+        successRate: totalFiles > 0 ? (completedFiles / totalFiles) * 100 : 0
+      };
+    } catch (error) {
+      console.error("Error getting upload stats:", error?.response?.data?.message || error);
+      return {
+        totalFiles: 0,
+        totalSize: 0,
+        completedFiles: 0,
+        failedFiles: 0,
+        successRate: 0
+      };
+    }
   }
 }
 
